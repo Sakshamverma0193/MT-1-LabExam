@@ -10,6 +10,27 @@ import http from 'http';
 
 const PORT = 3000;
 
+// In-memory "database": an array of vehicle objects (no real database used)
+const vehicles = [
+  { id: 1, vehicleName: 'Hyundai Creta', vehicleNumber: 'HR26AB1234', type: 'SUV', price: 1500000 },
+  { id: 2, vehicleName: 'Honda City', vehicleNumber: 'DL3CAB4567', type: 'Sedan', price: 1200000 },
+  { id: 3, vehicleName: 'Tata Nexon', vehicleNumber: 'UP14CD9876', type: 'SUV', price: 1100000 }
+];
+
+// ---- Helper functions to send responses with the correct Content-Type ----
+
+// Sends a JSON response with the given status code
+const sendJson = (res, statusCode, data) => {
+  res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(data, null, 2)); // null, 2 = pretty-print
+};
+
+// Sends an HTML response with the given status code
+const sendHtml = (res, statusCode, html) => {
+  res.writeHead(statusCode, { 'Content-Type': 'text/html' });
+  res.end(html);
+};
+
 // ---- A1: Create the HTTP server (this function runs for every request) ----
 const server = http.createServer((req, res) => {
   const { method } = req;
@@ -17,17 +38,19 @@ const server = http.createServer((req, res) => {
 
   // Home page: welcome page in HTML
   if (pathname === '/' && method === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end(`<html><head><title>Vehicle Management</title></head>
+    return sendHtml(
+      res,
+      200,
+      `<html><head><title>Vehicle Management</title></head>
        <body style="font-family: Arial, sans-serif; text-align:center; margin-top:60px;">
          <h1>Welcome to the Vehicle Management Application</h1>
          <p>Built with the Node.js HTTP module.</p>
-       </body></html>`);
-    return;
+         <p><a href="/vehicles">Vehicles</a> | <a href="/about">About</a> | <a href="/info">Info</a></p>
+       </body></html>`
+    );
   }
 
-  res.writeHead(404, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ error: 'Route not found' }));
+  sendJson(res, 404, { error: 'Route not found' });
 });
 
 // Start listening and print a message when the server starts
