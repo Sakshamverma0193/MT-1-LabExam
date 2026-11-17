@@ -97,6 +97,7 @@ const handleAddVehicle = (req, res) => {
 // ---- A4: Static file serving using fs.readFile() ----
 const serveInfoPage = (res) => {
   const filePath = path.join(__dirname, 'public', 'info.html');
+
   fs.readFile(filePath, (err, content) => {
     // If the file is missing or unreadable, respond with status 500
     if (err) {
@@ -111,7 +112,11 @@ const serveInfoPage = (res) => {
 // ---- A1: Create the HTTP server (this function runs for every request) ----
 const server = http.createServer((req, res) => {
   const { method } = req;
+
+  // Get only the path part of the URL (ignore ?query=string)
   const pathname = new URL(req.url, `http://${req.headers.host || 'localhost'}`).pathname;
+
+  // ---- A2: Routing ----
 
   // Home page: welcome page in HTML
   if (pathname === '/' && method === 'GET') {
@@ -152,6 +157,12 @@ const server = http.createServer((req, res) => {
     return serveInfoPage(res);
   }
 
+  // Route exists but the HTTP method is wrong -> 405 Method Not Allowed
+  if (['/', '/vehicles', '/about', '/info', '/add-vehicle'].includes(pathname)) {
+    return sendJson(res, 405, { error: `Method ${method} not allowed on ${pathname}` });
+  }
+
+  // ---- A5: Any other route -> 404 Not Found ----
   sendJson(res, 404, { error: 'Route not found' });
 });
 
