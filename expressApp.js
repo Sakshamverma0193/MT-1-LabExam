@@ -55,6 +55,38 @@ app.get('/vehicles/:id', (req, res) => {
   res.json(vehicle);
 });
 
+// CREATE - POST /vehicles
+app.post('/vehicles', (req, res) => {
+  const data = req.body || {};
+
+  // Validate required fields and price -> 400 on failure
+  const error = validateVehicle(data);
+  if (error) return res.status(400).json({ error });
+
+  // Use the id sent by the client, or generate the next free one
+  const id = isBlank(data.id) ? Math.max(0, ...vehicles.map((v) => v.id)) + 1 : Number(data.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ error: 'id must be a positive integer' });
+  }
+
+  // Prevent duplicate ids
+  if (vehicles.some((v) => v.id === id)) {
+    return res.status(409).json({ error: `Vehicle with id ${id} already exists` });
+  }
+
+  const vehicle = {
+    id,
+    vehicleName: data.vehicleName,
+    vehicleNumber: data.vehicleNumber,
+    type: data.type,
+    price: data.price
+  };
+  vehicles.push(vehicle);
+
+  // 201 = Created
+  res.status(201).json({ message: 'Vehicle added successfully', vehicle });
+});
+
 // Start the server
 app.listen(PORT, () => {
   console.log(`Express Server running at http://localhost:${PORT}`);
