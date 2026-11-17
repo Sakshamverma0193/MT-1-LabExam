@@ -16,6 +16,9 @@ const PORT = 3000;
 // ES modules do not have __dirname, so we create it from import.meta.url
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// Fields that every vehicle sent to POST /add-vehicle must contain
+const REQUIRED_FIELDS = ['id', 'vehicleName', 'vehicleNumber', 'type', 'price'];
+
 // In-memory "database": an array of vehicle objects (no real database used)
 const vehicles = [
   { id: 1, vehicleName: 'Hyundai Creta', vehicleNumber: 'HR26AB1234', type: 'SUV', price: 1500000 },
@@ -35,6 +38,60 @@ const sendJson = (res, statusCode, data) => {
 const sendHtml = (res, statusCode, html) => {
   res.writeHead(statusCode, { 'Content-Type': 'text/html' });
   res.end(html);
+};
+
+// ---- A3: POST /add-vehicle ----
+const handleAddVehicle = (req, res) => {
+  let body = '';
+
+  // The request body arrives in chunks; collect them into one string
+  req.on('data', (chunk) => {
+    body += chunk.toString();
+  });
+
+  // When all chunks have arrived, process the body
+  req.on('end', () => {
+    let vehicle;
+
+    // Step 1: body must be valid JSON, otherwise respond 400
+    try {
+      vehicle = JSON.parse(body);
+    } catch (error) {
+      return sendJson(res, 400, { error: 'Invalid JSON' });
+    }
+
+    // Step 2: body must be a JSON object (not an array, number, null, ...)
+    if (vehicle === null || typeof vehicle !== 'object' || Array.isArray(vehicle)) {
+      return sendJson(res, 400, { error: 'Request body must be a JSON object' });
+    }
+
+    // Step 3: check that all required fields are present
+    const missing = REQUIRED_FIELDS.filter(
+      (field) => vehicle[field] === undefined || vehicle[field] === null || vehicle[field] === ''
+    );
+    if (missing.length > 0) {
+      return sendJson(res, 400, { error: 'Missing required fields', missingFields: missing });
+    }
+
+    // Step 4: do not allow two vehicles with the same id
+    if (vehicles.some((v) => v.id === vehicle.id)) {
+      return sendJson(res, 409, { error: `Vehicle with id ${vehicle.id} already exists` });
+    }
+
+    // Step 5: keep only the known fields, add to the array, send success message
+    const newVehicle = {
+      id: vehicle.id,
+      vehicleName: vehicle.vehicleName,
+      vehicleNumber: vehicle.vehicleNumber,
+      type: vehicle.type,
+      price: vehicle.price
+    };
+    vehicles.push(newVehicle);
+    sendJson(res, 201, { message: 'Vehicle added successfully', vehicle: newVehicle });
+  });
+
+  // If reading the request fails, tell the client
+  req.on('error', () => sendJson(res, 400, { error: 'Error reading request body' }));
 };
 
 // ---- A4: Static file serving using fs.readFile() ----
@@ -73,6 +130,11 @@ const server = http.createServer((req, res) => {
   // GET /vehicles: list of all vehicles as JSON
   if (pathname === '/vehicles' && method === 'GET') {
     return sendJson(res, 200, vehicles);
+  }
+
+  // POST /add-vehicle: add a new vehicle
+  if (pathname === '/add-vehicle' && method === 'POST') {
+    return handleAddVehicle(req, res);
   }
 
   // /about: application information
