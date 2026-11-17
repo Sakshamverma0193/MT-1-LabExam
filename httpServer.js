@@ -50,6 +50,21 @@ const server = http.createServer((req, res) => {
     );
   }
 
+  // GET /vehicles: list of all vehicles as JSON
+  if (pathname === '/vehicles' && method === 'GET') {
+    return sendJson(res, 200, vehicles);
+  }
+
+  // /about: application information
+  if (pathname === '/about' && method === 'GET') {
+    return sendJson(res, 200, {
+      application: 'Vehicle Management Web Application',
+      version: '1.0.0',
+      description: 'Maintains vehicle records using the Node.js HTTP module with in-memory storage.',
+      technologies: ['Node.js', 'HTTP Module', 'FS Module']
+    });
+  }
+
   sendJson(res, 404, { error: 'Route not found' });
 });
 
