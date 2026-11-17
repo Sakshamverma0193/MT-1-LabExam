@@ -6,9 +6,15 @@
  */
 
 // ---- A1: Import built-in modules ----
-import http from 'http';
+import http from 'http';   // used to create the web server
+import fs from 'fs';       // used to read the static file public/info.html
+import path from 'path';   // used to build file paths safely
+import { fileURLToPath } from 'url'; // needed to get __dirname in ES modules
 
 const PORT = 3000;
+
+// ES modules do not have __dirname, so we create it from import.meta.url
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // In-memory "database": an array of vehicle objects (no real database used)
 const vehicles = [
@@ -29,6 +35,20 @@ const sendJson = (res, statusCode, data) => {
 const sendHtml = (res, statusCode, html) => {
   res.writeHead(statusCode, { 'Content-Type': 'text/html' });
   res.end(html);
+};
+
+// ---- A4: Static file serving using fs.readFile() ----
+const serveInfoPage = (res) => {
+  const filePath = path.join(__dirname, 'public', 'info.html');
+  fs.readFile(filePath, (err, content) => {
+    // If the file is missing or unreadable, respond with status 500
+    if (err) {
+      return sendJson(res, 500, { error: 'Internal Server Error: unable to read info.html' });
+    }
+    // Otherwise send the file content as HTML
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(content);
+  });
 };
 
 // ---- A1: Create the HTTP server (this function runs for every request) ----
@@ -63,6 +83,11 @@ const server = http.createServer((req, res) => {
       description: 'Maintains vehicle records using the Node.js HTTP module with in-memory storage.',
       technologies: ['Node.js', 'HTTP Module', 'FS Module']
     });
+  }
+
+  // /info: static file served using the fs module
+  if (pathname === '/info' && method === 'GET') {
+    return serveInfoPage(res);
   }
 
   sendJson(res, 404, { error: 'Route not found' });
