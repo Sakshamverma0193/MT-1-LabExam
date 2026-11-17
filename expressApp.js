@@ -87,6 +87,43 @@ app.post('/vehicles', (req, res) => {
   res.status(201).json({ message: 'Vehicle added successfully', vehicle });
 });
 
+// UPDATE - PUT /vehicles/:id
+app.put('/vehicles/:id', (req, res) => {
+  const id = Number(req.params.id);
+  const index = vehicles.findIndex((v) => v.id === id);
+
+  // Vehicle not found -> 404
+  if (index === -1) return res.status(404).json({ error: `Vehicle with id ${req.params.id} not found` });
+
+  // Validate the new data -> 400 on failure
+  const data = req.body || {};
+  const error = validateVehicle(data);
+  if (error) return res.status(400).json({ error });
+
+  // Replace the old record; the id itself is never changed
+  vehicles[index] = {
+    id,
+    vehicleName: data.vehicleName,
+    vehicleNumber: data.vehicleNumber,
+    type: data.type,
+    price: data.price
+  };
+  res.json({ message: 'Vehicle updated successfully', vehicle: vehicles[index] });
+});
+
+// DELETE - DELETE /vehicles/:id
+app.delete('/vehicles/:id', (req, res) => {
+  const id = Number(req.params.id);
+  const index = vehicles.findIndex((v) => v.id === id);
+
+  // Vehicle not found -> 404
+  if (index === -1) return res.status(404).json({ error: `Vehicle with id ${req.params.id} not found` });
+
+  // Remove it from the array and return the deleted record
+  const [deleted] = vehicles.splice(index, 1);
+  res.json({ message: 'Vehicle deleted successfully', vehicle: deleted });
+});
+
 // Start the server
 app.listen(PORT, () => {
   console.log(`Express Server running at http://localhost:${PORT}`);
