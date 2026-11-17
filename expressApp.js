@@ -124,6 +124,22 @@ app.delete('/vehicles/:id', (req, res) => {
   res.json({ message: 'Vehicle deleted successfully', vehicle: deleted });
 });
 
+// ---- Error handling ----
+
+// Any route not defined above -> 404
+app.use((req, res) => {
+  res.status(404).json({ error: 'Route not found' });
+});
+
+// Error-handling middleware (must have 4 parameters)
+app.use((err, req, res, next) => {
+  // express.json() throws this error when the body is not valid JSON
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'Invalid JSON' });
+  }
+  res.status(500).json({ error: 'Internal Server Error' });
+});
+
 // Start the server
 app.listen(PORT, () => {
   console.log(`Express Server running at http://localhost:${PORT}`);
